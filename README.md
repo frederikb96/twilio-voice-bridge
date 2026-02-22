@@ -144,6 +144,15 @@ For production, put this behind a reverse proxy (nginx, Caddy, Traefik) that ter
 - Update the Twilio webhook URL from your ngrok URL to `https://your-domain.com/incoming-call`
 - Consider setting `ALLOWED_CALLERS` to restrict who can use your bridge
 
+## Security
+
+Your webhook is protected by **Twilio signature validation**. Every request Twilio sends to `/incoming-call` is cryptographically signed using your `TWILIO_AUTH_TOKEN`. The server recomputes the signature and rejects anything that doesn't match. This means:
+
+- Another Twilio user can't point their number at your server -- their requests are signed with a different token, so they'll get a 403.
+- A random HTTP client can't hit your webhook either -- no valid signature, no entry.
+
+On top of that, `ALLOWED_CALLERS` lets you restrict which phone numbers are allowed through, even from valid Twilio requests. Note that caller ID can be spoofed via VoIP, so for sensitive deployments consider adding a voice PIN prompt before connecting to the AI.
+
 ## How I Use This
 
 I built this to turn my Garmin Fenix 8 smartwatch into a voice AI interface. The watch has a speaker and microphone for phone calls, but Garmin's Connect IQ SDK doesn't expose the mic to third-party apps. So instead of fighting the SDK, I went around it: the watch dials a Twilio number, which routes to this server, which connects to OpenAI's Realtime API. You can set up the phone number as a contact and then access it via the watch's built-in phone app to dial it as long as the watch is connected to my phone to route the call. Voice will be via the watch's speaker and mic.
