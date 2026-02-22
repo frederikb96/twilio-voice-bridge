@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Repo logo and README header with icon
+- Security section explaining Twilio signature validation
+- CI path filters to skip builds on docs-only changes
+
+### Changed
+
+- Simplified cost section (removed specific numbers)
+- Promoted "How I Use This" from collapsible to full section
+
 ## [0.1.0] - 2026-02-22
 
 ### Added
