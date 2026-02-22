@@ -1,7 +1,7 @@
 """AudioProvider protocol and event types for voice AI providers."""
 
 from dataclasses import dataclass, field
-from typing import AsyncIterator, Protocol, runtime_checkable
+from typing import Any, AsyncIterator, Protocol, runtime_checkable
 
 
 @dataclass
@@ -11,7 +11,7 @@ class ProviderConfig:
     system_prompt: str
     voice: str
     model: str
-    extra: dict[str, str] = field(default_factory=dict)
+    extra: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass

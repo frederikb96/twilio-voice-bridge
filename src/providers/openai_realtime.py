@@ -3,6 +3,7 @@
 import json
 import logging
 from collections.abc import AsyncIterator
+from typing import Any
 
 import websockets
 
@@ -39,18 +40,41 @@ class OpenAIRealtimeProvider:
             },
         )
 
+        td: dict[str, Any] = {
+            "type": config.extra.get("vad_type", "semantic_vad"),
+            "interrupt_response": config.extra.get("allow_interrupt", True),
+            "create_response": True,
+        }
+        vad_eagerness = config.extra.get("vad_eagerness", "")
+        if td["type"] == "semantic_vad" and vad_eagerness:
+            td["eagerness"] = vad_eagerness
+
         session_update = {
             "type": "session.update",
             "session": {
-                "turn_detection": {"type": "server_vad"},
+                "turn_detection": td,
                 "input_audio_format": "g711_ulaw",
                 "output_audio_format": "g711_ulaw",
                 "voice": config.voice,
                 "instructions": config.system_prompt,
                 "modalities": ["audio", "text"],
+                "temperature": config.extra.get("temperature", 0.8),
             },
         }
         await self._ws.send(json.dumps(session_update))
+
+        initial_prompt = config.extra.get("initial_prompt", "")
+        if initial_prompt:
+            await self._ws.send(json.dumps({
+                "type": "conversation.item.create",
+                "item": {
+                    "type": "message",
+                    "role": "user",
+                    "content": [{"type": "input_text", "text": initial_prompt}],
+                },
+            }))
+            await self._ws.send(json.dumps({"type": "response.create"}))
+
         logger.info("Connected to OpenAI Realtime (model=%s)", config.model)
 
     async def send_audio(self, audio_payload: str) -> None:

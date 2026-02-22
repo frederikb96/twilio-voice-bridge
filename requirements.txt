@@ -1,6 +1,6 @@
 fastapi>=0.115,<1.0
+python-multipart>=0.0.18,<1.0
 uvicorn[standard]>=0.34,<1.0
 websockets>=14.0,<15.0
 pydantic-settings>=2.7,<3.0
 twilio>=9.0,<10.0
-python-dotenv>=1.0,<2.0

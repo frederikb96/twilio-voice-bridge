@@ -22,7 +22,14 @@ async def run_bridge(websocket: WebSocket, settings: Settings) -> None:
         system_prompt=settings.SYSTEM_PROMPT,
         voice=settings.VOICE,
         model=settings.MODEL,
-        extra={"api_key": settings.OPENAI_API_KEY},
+        extra={
+            "api_key": settings.OPENAI_API_KEY,
+            "initial_prompt": settings.INITIAL_PROMPT,
+            "temperature": settings.TEMPERATURE,
+            "vad_type": settings.VAD_TYPE,
+            "vad_eagerness": settings.VAD_EAGERNESS,
+            "allow_interrupt": settings.ALLOW_INTERRUPT,
+        },
     )
     await provider.connect(config)
 

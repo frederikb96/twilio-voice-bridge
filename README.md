@@ -5,6 +5,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.12+](https://img.shields.io/badge/Python-3.12+-green.svg)](https://www.python.org/downloads/)
 
+> **Note:** This repo is provided as a reference implementation. I'm not actively maintaining it -- feel free to fork it and build your own thing on top.
+
 ## What Is This?
 
 A lightweight server that sits between Twilio and any AI voice provider. When someone calls your Twilio phone number, the server accepts the call, opens a bidirectional audio stream via WebSocket, and bridges it to an AI provider. The caller talks to the AI naturally over a regular phone call.
@@ -23,65 +25,115 @@ This project started as a workaround for the Garmin Fenix 8's lack of microphone
          |                      |--- POST /incoming -->|                      |
          |                      |<-- TwiML <Stream> ---|                      |
          |                      |                      |                      |
-         |<======= Twilio WebSocket =======>|<==== Provider WebSocket =====>|
+         |<======= Twilio WebSocket =======>|<==== Provider WebSocket =====>  |
          |                      |                      |                      |
-         |   g711_ulaw audio ---|----> send_audio() -->|--- audio chunks --->|
+         |   g711_ulaw audio ---|----> send_audio() -->|--- audio chunks ---> |
          |                      |                      |                      |
-         |                      |<--- AudioDelta ------|<-- AI response -----|
+         |                      |<--- AudioDelta ------|<-- AI response ----- |
          |<-- audio playback ---|                      |                      |
          |                      |                      |                      |
          |                      |<--- SpeechStarted ---|  (interrupt: clear)  |
          |                      |                      |                      |
-         |--- hang up -------->|--- stop ------------->|--- disconnect() --->|
+         |--- hang up --------> |--- stop ------------>|--- disconnect() ---->|
 ```
 
 The server runs two concurrent async tasks per call: one relays audio from Twilio to the provider, the other streams AI responses back. When the provider detects the caller started speaking (VAD), a `clear` event interrupts any in-progress AI playback.
 
-## Quick Start
+## Setup Guide
 
-**Prerequisites:** Python 3.12+, a [Twilio account](https://www.twilio.com/try-twilio), an [OpenAI API key](https://platform.openai.com/api-keys) with Realtime API access, and [ngrok](https://ngrok.com/) for local development.
+You'll need: Python 3.12+, [ngrok](https://ngrok.com/) (free tier works), a Twilio account, and an OpenAI API key.
 
-- Clone the repo and install dependencies:
-  ```bash
-  git clone https://github.com/frederikb96/twilio-voice-bridge.git
-  cd twilio-voice-bridge
-  python3 -m venv .venv && source .venv/bin/activate
-  pip install -r requirements.txt
-  ```
+### Step 1: Twilio -- get a phone number
 
-- Copy `.env.example` to `.env` and fill in your keys:
-  ```bash
-  cp .env.example .env
-  # Edit .env with your TWILIO_AUTH_TOKEN and OPENAI_API_KEY
-  ```
+- Create a Twilio account at [twilio.com/try-twilio](https://www.twilio.com/try-twilio). The free trial includes a phone number and some credit.
+- Go to *Phone Numbers* -> *Buy a Number*. Pick one with **Voice** capability. The free trial number may be US-only (not 100% sure). If you're in Europe, I ended up buying a Netherlands number -- as far as I could tell, it was one of the few EU countries where Twilio lets individuals buy a number without business registration. A local number also avoids international calling fees for callers.
+- From the Twilio Console dashboard, copy your **Auth Token** -- you'll need it in Step 3.
 
-- Start the server:
-  ```bash
-  uvicorn src.server:app --host 0.0.0.0 --port 5050
-  ```
+**Optional: regional routing for non-US servers.** By default, Twilio routes all calls through the US region, even for non-US phone numbers. If your server is in Europe, switch inbound processing to Ireland for lower latency: select your number -> *Routing* section -> click *Re-route* -> switch to Ireland (ie1). See [Twilio's inbound processing region docs](https://www.twilio.com/docs/global-infrastructure/inbound-processing-console) for details.
 
-Then expose it with ngrok (`ngrok http 5050`) and configure your Twilio number's webhook (see below).
+### Step 2: OpenAI -- get an API key
 
-## Twilio Setup
+- Go to [platform.openai.com/api-keys](https://platform.openai.com/api-keys) and create an API key.
+- Make sure your account has access to the **Realtime API** (it's included by default on paid plans).
 
-If you're starting from scratch:
+### Step 3: Install and configure
 
-- **Create a Twilio account** at [twilio.com/try-twilio](https://www.twilio.com/try-twilio). The free trial includes a phone number and some credit.
+```bash
+git clone https://github.com/frederikb96/twilio-voice-bridge.git
+cd twilio-voice-bridge
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+```
 
-- **Buy a phone number** (or use the trial number). In the Twilio Console, go to *Phone Numbers* -> *Buy a Number*. Make sure it has **Voice** capability.
+Edit `.env` and fill in the two required values:
+```
+TWILIO_AUTH_TOKEN=paste_your_twilio_auth_token
+OPENAI_API_KEY=paste_your_openai_api_key
+```
 
-- **Get your Auth Token** from the Twilio Console dashboard. Set it as `TWILIO_AUTH_TOKEN` in your `.env`.
+Everything else has sensible defaults. See [Configuration](#configuration) for the full list.
 
-- **Configure the webhook.** In the Twilio Console: *Phone Numbers* -> *Manage* -> *Active Numbers* -> select your number -> under *Voice Configuration*, set "A call comes in" to **Webhook**, method **POST**, URL:
-  ```
-  https://your-domain.com/incoming-call
-  ```
-  For local development, use your ngrok URL:
+### Step 4: Start the server and ngrok
+
+Open two terminals:
+
+```bash
+# Terminal 1: start the server
+cd twilio-voice-bridge
+source .venv/bin/activate
+uvicorn src.server:app --host 0.0.0.0 --port 5050
+```
+
+```bash
+# Terminal 2: expose via ngrok
+ngrok http 5050
+```
+
+ngrok will show a forwarding URL like `https://abc123.ngrok-free.app`. Copy it -- you need it for the next step.
+
+### Step 5: Connect Twilio to your server
+
+Go back to the Twilio Console and configure the webhook for your phone number.
+
+**Important if you changed the region in Step 1:** Phone number configurations in Twilio are **per region**. Make sure the console URL in your browser includes your region:
+```
+https://console.twilio.com/ie1/develop/...
+```
+If it says `us1` instead of `ie1`, you're editing the wrong region's config and calls won't reach your server.
+
+Navigate to *Phone Numbers* -> *Manage* -> *Active Numbers* -> select your number -> under *Voice Configuration*:
+- Set "A call comes in" to **Webhook** (not TwiML App)
+- Method: **POST**
+- URL: your ngrok URL + `/incoming-call`:
   ```
   https://abc123.ngrok-free.app/incoming-call
   ```
 
-- **Call your Twilio number.** You should hear the AI assistant respond.
+### Step 6: Test it
+
+Call your Twilio phone number. The AI should greet you within a few seconds. Talk to it -- you're having a voice conversation with the AI over a regular phone call.
+
+If something goes wrong, check the [Troubleshooting](#troubleshooting) section.
+
+## Production Deployment
+
+Once everything works via ngrok, you can move to a real deployment.
+
+### Docker
+
+```bash
+docker compose up --build
+```
+
+### Going live
+
+For production, put this behind a reverse proxy (nginx, Caddy, Traefik) that terminates TLS. Twilio requires HTTPS for webhooks and WSS for media streams.
+
+- Point a domain at your server
+- Set up TLS (Let's Encrypt / Caddy does this automatically)
+- Update the Twilio webhook URL from your ngrok URL to `https://your-domain.com/incoming-call`
+- Consider setting `ALLOWED_CALLERS` to restrict who can use your bridge
 
 ## Configuration
 
@@ -93,35 +145,17 @@ All settings are loaded from environment variables (or a `.env` file). See `.env
 | `OPENAI_API_KEY` | **Yes** (when using OpenAI provider) | -- | OpenAI API key with Realtime API access |
 | `PROVIDER` | No | `openai` | Which AI provider to use |
 | `SYSTEM_PROMPT` | No | `You are a helpful voice assistant.` | Instructions for the AI assistant |
+| `INITIAL_PROMPT` | No | `Greet with a very quick and short Hello.` | Injected as a user message on connect so the AI speaks first |
 | `VOICE` | No | `alloy` | Voice for the AI assistant (provider-specific) |
 | `MODEL` | No | `gpt-4o-realtime-preview` | Model to use (provider-specific) |
+| `TEMPERATURE` | No | `0.8` | Response temperature (0.0 = deterministic, 1.0 = creative) |
+| `VAD_TYPE` | No | `semantic_vad` | Voice activity detection: `semantic_vad` (smarter) or `server_vad` (legacy) |
+| `VAD_EAGERNESS` | No | *(OpenAI default)* | Eagerness for semantic_vad: `low`, `medium`, `high`, or `auto` |
+| `ALLOW_INTERRUPT` | No | `true` | Allow user to interrupt (barge-in) while assistant speaks |
 | `ALLOWED_CALLERS` | No | *(empty = allow all)* | Comma-separated phone numbers in E.164 format (e.g. `+14155551234,+49151...`) |
 | `MAX_CALL_DURATION` | No | `300` | Maximum call duration in seconds (cost protection) |
 | `PORT` | No | `5050` | Server port |
 | `LOG_LEVEL` | No | `INFO` | Logging level |
-
-## Deployment
-
-### Local Development
-
-```bash
-# Terminal 1: start the server
-source .venv/bin/activate
-uvicorn src.server:app --host 0.0.0.0 --port 5050
-
-# Terminal 2: expose via ngrok
-ngrok http 5050
-```
-
-Copy the ngrok HTTPS URL and paste it into your Twilio webhook config as `https://<ngrok-url>/incoming-call`.
-
-### Docker
-
-```bash
-docker compose up --build
-```
-
-For production, put this behind a reverse proxy (nginx, Caddy, Traefik) that terminates TLS. Twilio requires HTTPS for webhooks and WSS for media streams.
 
 ## Creating a Custom Provider
 
@@ -197,14 +231,6 @@ OpenAI's Realtime API dominates the cost. Twilio voice is comparatively cheap.
 | OpenAI Realtime API (gpt-4o) | ~$0.30/min (input + output combined) |
 | Server hosting | $5-15/month (small VPS) |
 
-**Monthly estimates:**
-
-| Usage Pattern | Twilio | OpenAI | Server | Total |
-|---------------|--------|--------|--------|-------|
-| Light (2 calls/day, 2 min) | ~$3 | ~$36 | ~$5-15 | **~$44-54** |
-| Casual (5 calls/day, 3 min) | ~$5 | ~$135 | ~$5-15 | **~$145-155** |
-| Heavy (15 calls/day, 5 min) | ~$20 | ~$675 | ~$10-20 | **~$705-715** |
-
 **Cost reduction:** Using `gpt-4o-mini-realtime-preview` instead of `gpt-4o-realtime-preview` reduces the OpenAI portion by roughly 70%, bringing the casual use case down to ~$50-60/month. Set `MODEL=gpt-4o-mini-realtime-preview` in your `.env`.
 
 The `MAX_CALL_DURATION` setting (default: 300 seconds) acts as a cost safety net.
@@ -212,7 +238,7 @@ The `MAX_CALL_DURATION` setting (default: 300 seconds) acts as a cost safety net
 <details>
 <summary><strong>How I Use This</strong></summary>
 
-I built this to turn my Garmin Fenix 8 smartwatch into a voice AI interface. The watch has a speaker and microphone for phone calls, but Garmin's Connect IQ SDK doesn't expose the mic to third-party apps. So instead of fighting the SDK, I went around it: the watch dials a Twilio number, which routes to this server, which connects to OpenAI's Realtime API.
+I built this to turn my Garmin Fenix 8 smartwatch into a voice AI interface. The watch has a speaker and microphone for phone calls, but Garmin's Connect IQ SDK doesn't expose the mic to third-party apps. So instead of fighting the SDK, I went around it: the watch dials a Twilio number, which routes to this server, which connects to OpenAI's Realtime API. You can set up the phone number as a contact and then access it via the watch's built-in phone app to dial it as long as the watch is connected to my phone to route the call. Voice will be via the watch's speaker and mic.
 
 From button press to hearing "Hello" takes about 5 seconds. The call quality is standard phone audio (8kHz) which works well for voice conversations.
 
@@ -228,32 +254,17 @@ My private fork extends this with Home Assistant integration (lights, climate, s
 - **No WebSocket reconnection** -- If the provider connection drops mid-call (network blip, API timeout), the call dies. No automatic retry.
 - **Caller ID is spoofable** -- The `ALLOWED_CALLERS` filter checks the `From` field, which can be spoofed via VoIP services. For sensitive deployments, consider adding a voice PIN prompt before connecting to the AI.
 
-## Alternatives
-
-Depending on your use case, simpler or cheaper options may exist:
-
-- **[OpenAI SIP Direct](https://platform.openai.com/docs/guides/realtime-phone-calling)** -- Twilio Elastic SIP Trunking connects directly to OpenAI, no bridge server needed. Simpler for OpenAI-only setups without custom tool calling.
-- **[Plivo](https://www.plivo.com/)** -- 35-40% cheaper than Twilio for voice, 6-second billing granularity vs Twilio's 1-minute minimum.
-- **[LiveKit](https://livekit.io/) / [Pipecat](https://github.com/pipecat-ai/pipecat)** -- Open-source WebRTC frameworks with sub-300ms latency. Different client approach (browser/app, not phone call).
-- **[Twilio ConversationRelay](https://www.twilio.com/docs/voice/conversation-relay)** -- Twilio's managed orchestration layer. Claims <500ms median latency.
-
 ## Legal Notice
 
-While this system does not record calls, it processes and transmits audio content to third-party AI services in real time. This may fall under recording/monitoring regulations depending on your jurisdiction:
-
-- **Germany:** Section 201 StGB -- recording private speech without consent is a criminal offense. AI processing of call audio may require disclosure.
-- **US:** Varies by state. 11 states (including California, Illinois, Florida) require all-party consent for call recording/monitoring.
-- **EU/GDPR:** Processing voice data requires a legal basis and may require explicit consent.
-
-**Recommendation:** Add a brief spoken disclosure at the start of each call (e.g., via the `SYSTEM_PROMPT`). Something like: *"This call is processed by an AI assistant."*
+While this system does not record calls, it processes and transmits audio content to third-party AI services in real time. This may fall under recording/monitoring regulations depending on your jurisdiction and use case. I am only using it for my private calls and limit it to my own phone number.
 
 ## Troubleshooting
 
 - **Call connects but no audio** -- Verify your Twilio webhook URL ends with `/incoming-call`. Check that the WebSocket connection upgrades to `wss://` (not `ws://`). If using ngrok, make sure it's still running.
 
-- **403 on incoming call** -- The server validates Twilio webhook signatures. Ensure `TWILIO_AUTH_TOKEN` in `.env` matches your Twilio Console. Also check that the webhook URL configured in Twilio matches exactly what your server sees (watch for trailing slashes, HTTP vs HTTPS).
+- **403 on incoming call** -- The server validates Twilio webhook signatures. Ensure `TWILIO_AUTH_TOKEN` in `.env` matches your Twilio Console. Also check that the webhook URL configured in Twilio matches exactly what your server sees (watch for trailing slashes, HTTP vs HTTPS). If you changed the Twilio region, make sure you configured the webhook in the correct region's console (check for `ie1` vs `us1` in the URL).
 
-- **OpenAI connection fails** -- Verify your API key has Realtime API access (it's a separate enablement). Check that the model name is correct (`gpt-4o-realtime-preview`). Look at server logs for the specific error.
+- **OpenAI connection fails** -- Verify your API key is valid. Check that the model name is correct (`gpt-4o-realtime-preview`). Look at server logs for the specific error.
 
 - **Audio is choppy or delayed** -- Server location matters. Deploy close to your Twilio region for lower latency. Check server CPU/memory -- audio relay is lightweight but network I/O matters.
 
