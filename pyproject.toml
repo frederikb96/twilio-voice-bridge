@@ -1,0 +1,34 @@
+[project]
+name = "twilio-voice-bridge"
+version = "0.1.0"
+description = "Modular Twilio Voice to AI bridge. Connect phone calls to OpenAI, Gemini, or any voice provider via WebSocket."
+requires-python = ">=3.12"
+license = "MIT"
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.34",
+  "websockets>=14.0",
+  "pydantic-settings>=2.7",
+  "twilio>=9.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "ruff>=0.9",
+  "mypy>=1.14",
+  "pytest>=8.0",
+  "pytest-asyncio>=0.25",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
