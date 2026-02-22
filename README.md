@@ -144,6 +144,14 @@ For production, put this behind a reverse proxy (nginx, Caddy, Traefik) that ter
 - Update the Twilio webhook URL from your ngrok URL to `https://your-domain.com/incoming-call`
 - Consider setting `ALLOWED_CALLERS` to restrict who can use your bridge
 
+## How I Use This
+
+I built this to turn my Garmin Fenix 8 smartwatch into a voice AI interface. The watch has a speaker and microphone for phone calls, but Garmin's Connect IQ SDK doesn't expose the mic to third-party apps. So instead of fighting the SDK, I went around it: the watch dials a Twilio number, which routes to this server, which connects to OpenAI's Realtime API. You can set up the phone number as a contact and then access it via the watch's built-in phone app to dial it as long as the watch is connected to my phone to route the call. Voice will be via the watch's speaker and mic.
+
+From button press to hearing "Hello" takes about 5 seconds. The call quality is standard phone audio (8kHz) which works well for voice conversations.
+
+My private fork extends this with Home Assistant integration (lights, climate, sensors), task scheduling, calendar access, and web research -- but that's all custom function calling layered on top of this same bridge architecture.
+
 ## Configuration
 
 All settings are loaded from environment variables (or a `.env` file). See `.env.example` for a ready-to-use template.
@@ -229,31 +237,9 @@ Set `PROVIDER=my_provider` in your `.env` and you're done. The bridge handles al
 
 **Ideas:** Google Gemini provider, local Whisper + Ollama for fully offline operation, Amazon Nova Sonic, ElevenLabs, or a simple echo provider for testing.
 
-## Cost Estimate
+## Cost
 
-OpenAI's Realtime API dominates the cost. Twilio voice is comparatively cheap.
-
-| Component | Rate |
-|-----------|------|
-| Twilio phone number | ~$1.15/month |
-| Twilio inbound voice | ~$0.0085/min |
-| OpenAI Realtime API (gpt-4o) | ~$0.30/min (input + output combined) |
-| Server hosting | $5-15/month (small VPS) |
-
-**Cost reduction:** Using `gpt-4o-mini-realtime-preview` instead of `gpt-4o-realtime-preview` reduces the OpenAI portion by roughly 70%, bringing the casual use case down to ~$50-60/month. Set `MODEL=gpt-4o-mini-realtime-preview` in your `.env`.
-
-The `MAX_CALL_DURATION` setting (default: 300 seconds) acts as a cost safety net.
-
-<details>
-<summary><strong>How I Use This</strong></summary>
-
-I built this to turn my Garmin Fenix 8 smartwatch into a voice AI interface. The watch has a speaker and microphone for phone calls, but Garmin's Connect IQ SDK doesn't expose the mic to third-party apps. So instead of fighting the SDK, I went around it: the watch dials a Twilio number, which routes to this server, which connects to OpenAI's Realtime API. You can set up the phone number as a contact and then access it via the watch's built-in phone app to dial it as long as the watch is connected to my phone to route the call. Voice will be via the watch's speaker and mic.
-
-From button press to hearing "Hello" takes about 5 seconds. The call quality is standard phone audio (8kHz) which works well for voice conversations.
-
-My private fork extends this with Home Assistant integration (lights, climate, sensors), task scheduling, calendar access, and web research -- but that's all custom function calling layered on top of this same bridge architecture.
-
-</details>
+The main cost components are: Twilio (phone number rental + per-minute voice charges), the AI provider (OpenAI Realtime API charges per minute of audio), and server hosting. The AI provider dominates the cost by far. Using a smaller model like `gpt-4o-mini-realtime-preview` significantly reduces this. The `MAX_CALL_DURATION` setting acts as a cost safety net.
 
 ## Known Limitations
 
