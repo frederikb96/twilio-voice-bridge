@@ -2,8 +2,9 @@
 
 **Modular Twilio Voice to AI bridge. Connect phone calls to OpenAI, Gemini, or any voice provider via WebSocket.**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Python 3.12+](https://img.shields.io/badge/Python-3.12+-green.svg)](https://www.python.org/downloads/)
+[![CI](https://github.com/frederikb96/twilio-voice-bridge/actions/workflows/ci.yaml/badge.svg)](https://github.com/frederikb96/twilio-voice-bridge/actions/workflows/ci.yaml)
+[![Release](https://img.shields.io/github/v/release/frederikb96/twilio-voice-bridge)](https://github.com/frederikb96/twilio-voice-bridge/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 > **Note:** This repo is provided as a reference implementation. I'm not actively maintaining it -- feel free to fork it and build your own thing on top.
 
