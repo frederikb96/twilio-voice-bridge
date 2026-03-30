@@ -1,0 +1,40 @@
+# twilio-voice-bridge configuration
+# All defaults in one place. Secrets use ${VAR} placeholders resolved from env vars.
+
+server:
+  port: 5050
+  log_level: INFO
+
+twilio:
+  # Auth token from Twilio Console (required for webhook signature validation)
+  auth_token: ${TWILIO_AUTH_TOKEN}
+  # Comma-separated phone numbers allowed to call (empty = allow all)
+  allowed_callers: ""
+  # Max call duration in seconds (cost protection)
+  max_call_duration: 300
+
+provider:
+  # Which AI provider to use (currently: openai)
+  name: openai
+  # System prompt for the voice assistant
+  system_prompt: "You are a helpful voice assistant."
+  # Injected as user message on connect so the AI speaks first
+  initial_prompt: "Greet with a very quick and short Hello."
+  # Voice for the AI assistant (provider-specific)
+  voice: alloy
+  # Model to use (provider-specific)
+  model: gpt-4o-realtime-preview
+  # Response temperature (0.0 = deterministic, 1.0 = creative)
+  temperature: 0.8
+
+vad:
+  # "semantic_vad" (smarter, default) or "server_vad" (legacy)
+  type: semantic_vad
+  # Eagerness for semantic_vad: "low", "medium", "high", or "auto"
+  eagerness: ""
+  # Allow user to interrupt (barge-in) while assistant speaks
+  allow_interrupt: true
+
+openai:
+  # Required when provider is openai -- from OS environment variables
+  api_key: ${OPENAI_API_KEY}

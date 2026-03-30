@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     """Settings loaded from environment variables and .env file."""
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    model_config = {"env_file_encoding": "utf-8"}
 
     PORT: int = 5050
     LOG_LEVEL: str = "INFO"

@@ -72,16 +72,16 @@ git clone https://github.com/frederikb96/twilio-voice-bridge.git
 cd twilio-voice-bridge
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env
+cp .dev.env.example .dev.env
 ```
 
-Edit `.env` and fill in the two required values:
+Edit `.dev.env` and fill in the two required values:
 ```
 TWILIO_AUTH_TOKEN=paste_your_twilio_auth_token
 OPENAI_API_KEY=paste_your_openai_api_key
 ```
 
-Everything else has sensible defaults. See [Configuration](#configuration) for the full list.
+Everything else has sensible defaults in `config/config.yaml`. See [Configuration](#configuration) for the full list.
 
 ### Step 4: Start the server and ngrok
 
@@ -132,7 +132,9 @@ Once everything works via ngrok, you can move to a real deployment.
 ### Docker
 
 ```bash
-docker compose up --build
+podman compose --env-file .prod.env -f compose.yaml up -d --build
+# or for dev:
+podman compose --env-file .dev.env -f compose.dev.yaml up -d --build
 ```
 
 ### Going live
@@ -163,7 +165,7 @@ My private fork extends this with Home Assistant integration (lights, climate, s
 
 ## Configuration
 
-All settings are loaded from environment variables (or a `.env` file). See `.env.example` for a ready-to-use template.
+All non-secret defaults live in `config/config.yaml`. Secrets are injected via OS environment variables. See `.dev.env.example` for required secret variable names.
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
@@ -240,7 +242,7 @@ PROVIDERS: dict[str, type[Any]] = {
 }
 ```
 
-Set `PROVIDER=my_provider` in your `.env` and you're done. The bridge handles all Twilio communication -- your provider only needs to speak audio.
+Set `PROVIDER=my_provider` in your environment and you're done. The bridge handles all Twilio communication -- your provider only needs to speak audio.
 
 **Audio format:** Twilio Media Streams sends g711_ulaw at 8kHz mono. If your AI backend uses a different format, convert in your provider's `send_audio()` / `receive_audio()` methods. OpenAI's Realtime API accepts g711_ulaw natively, so the included provider needs no conversion.
 
@@ -266,15 +268,15 @@ While this system does not record calls, it processes and transmits audio conten
 
 - **Call connects but no audio** -- Verify your Twilio webhook URL ends with `/incoming-call`. Check that the WebSocket connection upgrades to `wss://` (not `ws://`). If using ngrok, make sure it's still running.
 
-- **403 on incoming call** -- The server validates Twilio webhook signatures. Ensure `TWILIO_AUTH_TOKEN` in `.env` matches your Twilio Console. Also check that the webhook URL configured in Twilio matches exactly what your server sees (watch for trailing slashes, HTTP vs HTTPS). If you changed the Twilio region, make sure you configured the webhook in the correct region's console (check for `ie1` vs `us1` in the URL).
+- **403 on incoming call** -- The server validates Twilio webhook signatures. Ensure `TWILIO_AUTH_TOKEN` in your environment matches your Twilio Console. Also check that the webhook URL configured in Twilio matches exactly what your server sees (watch for trailing slashes, HTTP vs HTTPS). If you changed the Twilio region, make sure you configured the webhook in the correct region's console (check for `ie1` vs `us1` in the URL).
 
 - **OpenAI connection fails** -- Verify your API key is valid. Check that the model name is correct (`gpt-4o-realtime-preview`). Look at server logs for the specific error.
 
 - **Audio is choppy or delayed** -- Server location matters. Deploy close to your Twilio region for lower latency. Check server CPU/memory -- audio relay is lightweight but network I/O matters.
 
-- **Call drops after a few minutes** -- Check `MAX_CALL_DURATION` (default: 300 seconds / 5 minutes). Increase it in `.env` if needed.
+- **Call drops after a few minutes** -- Check `MAX_CALL_DURATION` (default: 300 seconds / 5 minutes). Increase it in your environment or `config/config.yaml` if needed.
 
-- **"Unknown provider" error at startup** -- The `PROVIDER` value in `.env` must match a key in `src/providers/__init__.py`. Currently only `openai` is included.
+- **"Unknown provider" error at startup** -- The `PROVIDER` value must match a key in `src/providers/__init__.py`. Currently only `openai` is included.
 
 ## License
 

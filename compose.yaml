@@ -1,9 +1,15 @@
 services:
   voice-bridge:
-    build: .
+    build:
+      context: .
+      target: prod
     ports:
       - "${PORT:-5050}:5050"
-    env_file: .env
+    volumes:
+      - ./config:/app/config:ro,z
+    environment:
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5050/')"]

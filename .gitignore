@@ -10,7 +10,9 @@ build/
 .venv/
 
 # Environment
-.env
+.dev.env
+.prod.env
+config-custom/*.yaml
 
 # Type checking / Linting
 .mypy_cache/
