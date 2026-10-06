@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-10-06
+
 ### Changed
 
 - Bump `websockets` from v14 to v17
