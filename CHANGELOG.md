@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Bump `websockets` from v14 to v17
+- Bump `actions/checkout` to v7, `actions/setup-python` to v7, `docker/setup-buildx-action` to v4, `docker/login-action` to v4, `docker/build-push-action` to v7 and `softprops/action-gh-release` to v3
+- Run the CI and release workflows on Python 3.14
+
 ## [0.1.1] - 2026-02-22
 
 ### Added
