@@ -278,6 +278,16 @@ While this system does not record calls, it processes and transmits audio conten
 
 - **"Unknown provider" error at startup** -- The `PROVIDER` value must match a key in `src/providers/__init__.py`. Currently only `openai` is included.
 
+## Development
+
+```bash
+python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
+.venv/bin/ruff check src/
+.venv/bin/mypy src/
+```
+
+There is no test suite. Dependencies are declared in both `pyproject.toml` and `requirements.txt` (the Dockerfile installs the latter); keep them in sync. Pull requests run the lint and type check in CI.
+
 ## License
 
 [MIT](LICENSE)
