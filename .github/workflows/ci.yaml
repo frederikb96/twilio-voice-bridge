@@ -1,15 +1,6 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "src/**"
-      - "tests/**"
-      - "pyproject.toml"
-      - "requirements.txt"
-      - "Dockerfile"
-      - ".github/workflows/ci.yaml"
   pull_request:
     branches: [main]
     paths:
