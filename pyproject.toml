@@ -1,6 +1,6 @@
 [project]
 name = "twilio-voice-bridge"
-version = "0.1.2"
+version = "0.1.3"
 description = "Modular Twilio Voice to AI bridge. Connect phone calls to OpenAI, Gemini, or any voice provider via WebSocket."
 requires-python = ">=3.12"
 license = "MIT"
