@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Run the container image and the CI and release workflows on Python 3.15
+
 ## [0.1.2] - 2026-10-06
 
 ### Changed
