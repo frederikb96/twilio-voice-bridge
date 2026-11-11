@@ -1,5 +1,5 @@
-[![CI](https://github.com/frederikb96/twilio-voice-bridge/actions/workflows/ci.yaml/badge.svg)](https://github.com/frederikb96/twilio-voice-bridge/actions/workflows/ci.yaml)
-[![Release](https://img.shields.io/github/v/release/frederikb96/twilio-voice-bridge)](https://github.com/frederikb96/twilio-voice-bridge/releases)
+[![CI](https://github.com/frederikberg/twilio-voice-bridge/actions/workflows/ci.yaml/badge.svg)](https://github.com/frederikberg/twilio-voice-bridge/actions/workflows/ci.yaml)
+[![Release](https://img.shields.io/github/v/release/frederikberg/twilio-voice-bridge)](https://github.com/frederikberg/twilio-voice-bridge/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 <table>
@@ -68,7 +68,7 @@ You'll need: Python 3.12+, [ngrok](https://ngrok.com/) (free tier works), a Twil
 ### Step 3: Install and configure
 
 ```bash
-git clone https://github.com/frederikb96/twilio-voice-bridge.git
+git clone https://github.com/frederikberg/twilio-voice-bridge.git
 cd twilio-voice-bridge
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
